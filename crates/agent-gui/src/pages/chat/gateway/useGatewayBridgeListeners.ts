@@ -43,6 +43,7 @@ type UseGatewayBridgeListenersParams = GatewayBridgeRuntimeRefs & {
     messages: ClarifyMessage[],
     selection: { providerId: string; model: string },
     runtimeControls: ChatRuntimeControls,
+    onTextDelta?: (delta: string) => void,
   ) => Promise<string>;
 };
 
@@ -739,6 +740,13 @@ export function useGatewayBridgeListeners(params: UseGatewayBridgeListenersParam
           messages,
           { providerId: event.payload.providerId, model: event.payload.model },
           normalizeChatRuntimeControls(runtimeControls),
+          (delta) => {
+            void invoke<unknown>("gateway_clarify_delta", {
+              input: { requestId, text: delta },
+            }).catch((error: unknown) => {
+              console.warn("gateway_clarify_delta failed", error);
+            });
+          },
         );
       } catch (error) {
         errorCode = "execution_error";
